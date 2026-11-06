@@ -921,3 +921,100 @@
     content: ' \2713 \25CF';
     color: var(--okGreen70a, rgba(0, 100, 0, 0.7));
 }
+
+/* ─── Lore & Banks tab ─────────────────────────────────────────────── */
+.sc-bank-list,
+.sc-lore-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+}
+.sc-bank-row,
+.sc-lore-card,
+.sc-lore-history-row {
+    border: 1px solid var(--SmartThemeBorderColor, rgba(127, 127, 127, 0.35));
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+.sc-bank-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+.sc-bank-row-active {
+    border-color: var(--SmartThemeQuoteColor, #7aa2f7);
+}
+.sc-bank-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.sc-bank-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.sc-bank-actions .menu_button,
+.sc-lore-history-row .menu_button {
+    padding: 2px 8px;
+    margin: 0;
+    width: auto;
+}
+.sc-lore-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.sc-lore-card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.sc-lore-card-head .sc-lore-name {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.sc-lore-history-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.sc-lore-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+.sc-badge {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 0.8em;
+    line-height: 1.6;
+    background: rgba(127, 127, 127, 0.25);
+}
+.sc-badge-create {
+    background: rgba(80, 180, 120, 0.3);
+}
+.sc-badge-update,
+.sc-badge-active {
+    background: rgba(90, 140, 230, 0.3);
+}
+.sc-lore-pre {
+    white-space: pre-wrap;
+    font-size: 0.85em;
+    max-height: 200px;
+    overflow: auto;
+}
+.sc-error {
+    color: var(--warning, #e0a040);
+}
+.sc-details > summary {
+    cursor: pointer;
+    margin: 6px 0;
+}

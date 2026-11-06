@@ -9,7 +9,13 @@
  */
 
 import { LOG_PREFIX } from './src/foundation/constants.js';
-import { getChat, getContext, saveChat, saveMetadata } from './src/foundation/context.js';
+import {
+    getChat,
+    getContext,
+    isGeneratingFlagSet,
+    saveChat,
+    saveMetadata,
+} from './src/foundation/context.js';
 import { saveChatStore } from './src/foundation/chat-store.js';
 import { initChatPersistence } from './src/core/persist-state.js';
 import { initRefreshPort, refreshPreview, refreshUi } from './src/foundation/refresh.js';
@@ -40,6 +46,26 @@ import {
     onMessageReceived,
 } from './src/entry/events.js';
 import { registerSlashCommands } from './src/entry/commands.js';
+import { createLorebookIngestor } from './src/core/lorebook-ingest.js';
+import { announceScan, buildLatestSnippetEvent, initLoreBanksUI } from './src/entry/ui-lore.js';
+
+/**
+ * Folder this extension was installed into, so renaming the clone (for
+ * example "Extension-Summaryception-BestOfAll") keeps the template path valid.
+ * @returns {string}
+ */
+function resolveExtensionFolder() {
+    try {
+        const path = new URL('.', import.meta.url).pathname;
+        const match = path.match(/\/scripts\/extensions\/(.+?)\/?$/);
+        if (match) {
+            return decodeURIComponent(match[1]);
+        }
+    } catch (_e) {
+        // Fall through to the historical folder name.
+    }
+    return 'third-party/Extension-Summaryception';
+}
 
 (async function init() {
     const ctx = getContext();
@@ -102,12 +128,15 @@ import { registerSlashCommands } from './src/entry/commands.js';
         updatePreview: syncLLMContextPreview,
     });
     initSnippetBrowser({ notify, gate, queue, dispatch, usage });
+    // Lorebook Ingestion observes Layer 0 commits; it never blocks them.
+    const loreIngestor = createLorebookIngestor({
+        dispatch: dispatch.call,
+        notify,
+        onScanSettled: (summary) => announceScan(summary),
+        isForegroundBusy: () => gate.isFrozen() || isGeneratingFlagSet(),
+    });
 
-    const html = await renderExtensionTemplateAsync(
-        'third-party/Extension-Summaryception',
-        'settings',
-        {},
-    );
+    const html = await renderExtensionTemplateAsync(resolveExtensionFolder(), 'settings', {});
     $('#extensions_settings2').append(html);
 
     initSettingsHelp();
@@ -115,6 +144,7 @@ import { registerSlashCommands } from './src/entry/commands.js';
     bindPromptFreezeRecoveryEvents({ gate });
     initSettingsTabs();
     initConnectionUI();
+    initLoreBanksUI({ ingestor: loreIngestor, queue, gate });
     await writer.registerMacro();
 
     eventSource.on(eventTypes.MESSAGE_RECEIVED, (messageIndex, type) =>
@@ -142,7 +172,14 @@ import { registerSlashCommands } from './src/entry/commands.js';
     if (eventTypes.CHAT_COMPLETION_PROMPT_READY) {
         eventSource.on(eventTypes.CHAT_COMPLETION_PROMPT_READY, onChatCompletionPromptReady);
     }
-    registerSlashCommands();
+    registerSlashCommands({
+        lore: {
+            scanLatest: async () => {
+                const event = await buildLatestSnippetEvent();
+                return event ? await loreIngestor.scan(event, { manual: true }) : null;
+            },
+        },
+    });
 
     eventSource.on(eventTypes.APP_READY, async () => {
         await onAppReady({ gate, queue });

@@ -158,6 +158,26 @@ interface ExtensionSettings {
     auditorSummarizerResponseLength: number;
     auditorConnectionProfileId: string;
     auditorRequestTimeoutSeconds: number;
+    memoryBanksEnabled: boolean;
+    memoryBanksNotifySwitch: boolean;
+    lorebookEnabled: boolean;
+    lorebookTargetMode: 'chat' | 'character' | 'named' | string;
+    lorebookTargetName: string;
+    lorebookAutoCreate: boolean;
+    lorebookReviewMode: 'review' | 'auto' | string;
+    lorebookMaxTagsPerScan: number;
+    lorebookTypes: string[];
+    lorebookAllowUpdates: boolean;
+    lorebookUseMergeRoute: boolean;
+    lorebookEntrySelective: boolean;
+    lorebookEntryConstant: boolean;
+    lorebookEntryVectorized: boolean;
+    lorebookEntryOrder: number;
+    lorebookEntryDepth: number;
+    lorebookEntryPosition: number;
+    lorebookSystemPrompt: string;
+    lorebookScoutPrompt: string;
+    lorebookEntryPrompts: Record<string, string>;
 }
 
 interface GenerateRawMessage {
@@ -258,6 +278,7 @@ interface SillyTavernContext {
         immediately?: boolean,
     ) => Promise<void>;
     getWorldInfoNames?: () => string[];
+    getCurrentChatId?: () => string | undefined;
     setExtensionPrompt(
         id: string,
         text: string,
@@ -312,7 +333,7 @@ declare const SillyTavern: {
     getContext(): SillyTavernContext;
 };
 
-declare const toastr: {
+declare var toastr: {
     success(message: string, title?: string, options?: Record<string, unknown>): void;
     error(message: string, title?: string, options?: Record<string, unknown>): void;
     warning(message: string, title?: string, options?: Record<string, unknown>): void;

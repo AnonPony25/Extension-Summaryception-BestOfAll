@@ -1,3 +1,4 @@
+import { notifyLayer0Committed } from './layer0-observers.js';
 import { BATCH_PROGRESS } from '../foundation/constants.js';
 import { getContext, getChat } from '../foundation/context.js';
 import { ensureChatScIds } from '../foundation/message-identity.js';
@@ -448,6 +449,14 @@ async function commitLayer0Snippets({ entries, notify, gate }) {
         },
     );
 
+    notifyLayer0Committed(
+        entries.map(({ snapshot, snippet }) => ({
+            passageText: snapshot.passageText,
+            snippetText: snippet.text,
+            sourceMessageIds: [...snapshot.sourceMessageIds],
+            sourceRange: /** @type {[number, number]} */ ([...snapshot.sourceRange]),
+        })),
+    );
     return true;
 }
 

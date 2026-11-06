@@ -1,6 +1,39 @@
-# Summaryception
+# Summaryception (Best of All)
 
-Layered recursive memory for SillyTavern.
+Layered recursive memory for SillyTavern, merged from four community builds:
+
+- [Lodactio/Extension-Summaryception](https://github.com/Lodactio/Extension-Summaryception) - the original layered recursive summarizer.
+- [vadash/Extension-Summaryception](https://github.com/vadash/Extension-Summaryception) - the base of this build: modular core, connection routes, Continuity Auditor, prefix-cache aware context management, test suite.
+- [Romuromylus/Extension-Summaryception-Lorebook](https://github.com/Romuromylus/Extension-Summaryception-Lorebook) - automatic fact extraction into World Info (the `NEW:` / `UPDATE:` tag grammar).
+- [dogoo9/Extension-Summaryception](https://github.com/dogoo9/Extension-Summaryception) - per-character memory banks.
+
+Settings and chat data stay under the `summaryception` key, so existing vadash/Lodactio chats load as-is. Do not run this alongside another Summaryception copy.
+
+## Best of All additions
+
+All new options live in the **Lore & Banks** tab.
+
+### Memory Banks
+
+Each chat keeps a separate memory bank per character card (or per group). When the chat's card changes, the live bank is parked, the incoming card's bank is restored, and ghosting is re-synced to match. An existing chat with memory is adopted by its current card on first load; nothing is discarded. Turning the feature off freezes the live bank in place. `/sc-clear` empties only the live bank.
+
+### Lorebook Ingestion (off by default)
+
+After each Layer 0 snippet commits, a Lore Scout call reads the summarized passage and proposes `NEW:` or `UPDATE:` entries for characters, locations, factions, items, and world rules. Each proposal gets one entry-drafting call, using the current book as the source of truth for names and collisions.
+
+- **Target:** chat lorebook (created and bound if missing), the character's primary lorebook (never created), or a named book.
+- **Write mode:** Review first (proposals wait in the queue for Approve / Edit / Reject) or Auto (written immediately, revertable from history).
+- Entries are tagged `[SC] <type>: <Name>` in their comment, with configurable selective/constant/vectorized flags, order, depth, and position.
+- Cost: one scout call per snippet, plus one call per proposed entity (capped by Max Entities Per Snippet). Calls use the Layer 0 route, or the merge route if enabled.
+- Runs only while SillyTavern is idle, and drops work if the chat changes mid-run.
+
+### New slash commands
+
+`/sc-banks` lists the banks stored in this chat and which one is live.
+
+`/sc-lore-scan` re-runs the Lore Scout on the latest Layer 0 snippet.
+
+`/sc-status` now also shows the active bank and pending lore proposals.
 
 Summaryception is for long roleplay chats that should remember what happened without shoving the whole backstory into every prompt. It runs as a plain browser extension inside [SillyTavern](https://github.com/SillyTavern/SillyTavern). No build step, no server, no database.
 
@@ -49,8 +82,10 @@ In SillyTavern:
 
 1. Open Extensions.
 2. Choose Install Extension.
-3. Paste `https://github.com/vadash/Extension-Summaryception`.
+3. Paste the URL of this repository.
 4. Install, then open Summaryception in extension settings.
+
+The install folder name does not matter; templates resolve from the script location. Disable or remove any other Summaryception copy first.
 
 ## First setup
 
@@ -242,4 +277,4 @@ Use preset FF5.4 or later with forced reasoning.
 
 ## License
 
-AGPL-3.0-or-later. See [LICENSE](LICENSE).
+AGPL-3.0-or-later. See [LICENSE](LICENSE). All four upstream projects are AGPL-3.0; credit for the original work belongs to their authors.

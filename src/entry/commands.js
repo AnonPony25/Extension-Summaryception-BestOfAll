@@ -5,13 +5,16 @@ import { getChatStore } from '../foundation/chat-store.js';
 import { clearChatData } from '../core/chat-data.js';
 import { buildInjection } from '../core/memory-injection.js';
 import { getCurrentSummarizedBoundary } from '../core/snippet-provenance.js';
+import { getActiveBankLabel, listBanks } from '../core/memory-banks.js';
+import { countPendingProposals } from '../core/lorebook-queue.js';
 
 /**
  * Registers the extension's slash commands with the host parser.
  * Skips registration when the host omits the parser.
+ * @param {{ lore?: { scanLatest: () => Promise<import('../core/lorebook-ingest.js').LoreScanSummary | null> } }} [deps]
  * @returns {void}
  */
-export function registerSlashCommands() {
+export function registerSlashCommands({ lore } = {}) {
     try {
         const SlashCommandParser = getSlashCommandParser();
         const SlashCommand = getSlashCommand();
@@ -28,6 +31,9 @@ export function registerSlashCommands() {
                     const store = getChatStore();
                     const boundary = getCurrentSummarizedBoundary(getChat(), store);
                     const lines = ['**Summaryception Status**'];
+                    const bank = getActiveBankLabel();
+                    lines.push(`Memory bank: ${bank.label}`);
+                    lines.push(`Lore proposals pending: ${countPendingProposals()}`);
                     lines.push(
                         boundary < 0 ? 'No summaries.' : `Current summarized boundary: ${boundary}`,
                     );
@@ -62,6 +68,38 @@ export function registerSlashCommands() {
                 helpString: 'Preview the summary block that would be injected',
             }),
         );
+
+        SlashCommandParser.addCommandObject(
+            SlashCommand.fromProps({
+                name: 'sc-banks',
+                callback: () => {
+                    const lines = ['**Summaryception Memory Banks**'];
+                    for (const bank of listBanks()) {
+                        lines.push(
+                            `${bank.active ? '▶ ' : '  '}${bank.label} (${bank.kind}): ${bank.snippets} snippets · ${bank.key}`,
+                        );
+                    }
+                    return lines.join('\n');
+                },
+                helpString: 'List the memory banks stored in this chat',
+            }),
+        );
+
+        if (lore) {
+            SlashCommandParser.addCommandObject(
+                SlashCommand.fromProps({
+                    name: 'sc-lore-scan',
+                    callback: async () => {
+                        const summary = await lore.scanLatest();
+                        if (!summary) {
+                            return 'No Layer 0 snippet to scan yet.';
+                        }
+                        return `Lore scan ${summary.status}: ${summary.tags} tag(s), ${summary.proposals} proposal(s), ${summary.written} written.`;
+                    },
+                    helpString: 'Run Lorebook Ingestion on the newest Layer 0 snippet now',
+                }),
+            );
+        }
     } catch (e) {
         warn('Could not register slash commands:', e);
     }

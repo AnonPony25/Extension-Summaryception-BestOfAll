@@ -6,6 +6,8 @@ import { commitSnippetMutation } from './snippet-commit.js';
 import { persistChatState } from './persist-state.js';
 import { removeMessageTokenCaches } from './token-count.js';
 import { removeCheckpoints } from './continuity-checkpoint.js';
+import { parkedBanksHoldSnippets } from './memory-banks.js';
+import { clearLoreReviewQueue } from './lorebook-queue.js';
 
 /**
  * Clear: remove every piece of Extension Chat Data from the chat and unhide its
@@ -18,6 +20,10 @@ import { removeCheckpoints } from './continuity-checkpoint.js';
  *
  * A step that fails leaves the wipe partial; the action is user-confirmed and
  * idempotent, so re-running it finishes the job.
+ *
+ * Memory Banks: Clear empties the live bank only. When a parked bank still
+ * holds Snippets, message identities stay so that bank keeps its provenance;
+ * the parked banks themselves are removed from the Banks panel, one by one.
  * @returns {Promise<void>}
  */
 export async function clearChatData() {
@@ -31,7 +37,10 @@ export async function clearChatData() {
     );
 
     const chat = getChat();
-    removeMessageIdentities(chat);
+    if (!parkedBanksHoldSnippets()) {
+        removeMessageIdentities(chat);
+    }
+    clearLoreReviewQueue();
     removeMessageTokenCaches(chat);
     removeCheckpoints(chat);
 

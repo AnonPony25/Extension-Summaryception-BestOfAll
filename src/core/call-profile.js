@@ -61,6 +61,7 @@ const ROUTE_IDENTITY_KEYS = Object.freeze({
  * @typedef {object} SummarizerCallMetadata
  * @property {'layer0' | 'promotion' | 'regenerate' | 'auditor' | string} [kind] - Call category
  * @property {[number, number]} [sourceRange] - Source chat index range
+ * @property {string} [loreEntityName] - Entity a lorebook-entry call drafts
  * @property {import('./chatutils.js').PassageRegexStats} [regexStats] - Passage regex stats
  * @property {string} [passageNames] - Comma-joined census of the passage's recurring character names, for the Refusal Guard shape signal
  * @property {number} [sourceTokensBefore] - Source text size before summarization
@@ -182,6 +183,12 @@ function resolveSystemPrompt(settings, kind) {
     if (kind === 'auditor') {
         return getStringSetting(settings.auditorSystemPrompt, defaultSettings.auditorSystemPrompt);
     }
+    if (isLorebookKind(kind)) {
+        return getStringSetting(
+            settings.lorebookSystemPrompt,
+            defaultSettings.lorebookSystemPrompt,
+        );
+    }
     return getStringSetting(
         settings.summarizerSystemPrompt,
         defaultSettings.summarizerSystemPrompt,
@@ -205,7 +212,31 @@ function resolveUserPromptTemplate(settings, call) {
     if (call.kind === 'auditor') {
         return getStringSetting(settings.auditorUserPrompt, defaultSettings.auditorUserPrompt);
     }
+    if (call.kind === 'lorebook-scout') {
+        const maxTags = Math.max(
+            1,
+            Math.min(12, Math.round(Number(settings.lorebookMaxTagsPerScan) || 4)),
+        );
+        return getStringSetting(
+            settings.lorebookScoutPrompt,
+            defaultSettings.lorebookScoutPrompt,
+        ).replaceAll('{{max_tags}}', String(maxTags));
+    }
+    if (call.kind === 'lorebook-entry') {
+        // The entry writer renders its own type-specific prompt and ships it
+        // whole as the story text; the template only passes it through.
+        return '{{story_txt}}';
+    }
     return getStringSetting(settings.summarizerUserPrompt, defaultSettings.summarizerUserPrompt);
+}
+
+/**
+ * Lorebook Ingestion call families: no compression contract, no size guard.
+ * @param {string} [kind]
+ * @returns {boolean}
+ */
+export function isLorebookKind(kind) {
+    return kind === 'lorebook-scout' || kind === 'lorebook-entry';
 }
 
 /**
@@ -252,6 +283,12 @@ function buildCallLabel(call) {
     if (call.kind === 'regenerate') {
         return `regenerate turns ${formatRange(call.sourceRange)}`;
     }
+    if (call.kind === 'lorebook-scout') {
+        return `lore scout turns ${formatRange(call.sourceRange)}`;
+    }
+    if (call.kind === 'lorebook-entry') {
+        return `lore entry ${call.loreEntityName || ''}`.trim();
+    }
     return call.kind || 'summarizer';
 }
 
@@ -278,6 +315,7 @@ function buildProvenance(call) {
         'overflowTokens',
         'overflowTokenQuota',
         'promotionRepair',
+        'loreEntityName',
     ]) {
         if (call[key] !== undefined) {
             provenance[key] = call[key];
@@ -298,6 +336,11 @@ function buildProvenance(call) {
 function resolveRouteSeries(settings, kind) {
     if (kind === 'auditor') {
         return resolveAuditorRouteSeries(settings);
+    }
+    if (isLorebookKind(kind)) {
+        // Lore calls ride the Narrative Chain; the opt-in runs them on the
+        // merge route so a stronger model can own fact extraction.
+        return resolveNarrativeRouteSeries(settings, Boolean(settings.lorebookUseMergeRoute));
     }
     return resolveNarrativeRouteSeries(settings, kind === 'promotion');
 }

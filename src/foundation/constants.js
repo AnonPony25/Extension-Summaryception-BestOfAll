@@ -1,4 +1,9 @@
 import {
+    DEFAULT_LOREBOOK_ENTRY_PROMPTS,
+    DEFAULT_LOREBOOK_SCOUT_PROMPT,
+    DEFAULT_LOREBOOK_SYSTEM_PROMPT,
+} from './lorebook-prompts.js';
+import {
     DEFAULT_AUDITOR_SYSTEM_PROMPT,
     DEFAULT_AUDITOR_USER_PROMPT,
     DEFAULT_INJECTION_TEMPLATE,
@@ -147,6 +152,9 @@ export const SLIDER_LIMITS = Object.freeze({
     fallbackSummarizerResponseLength: Object.freeze({ MIN: 0, MAX: null, STEP: 100 }),
     auditorSummarizerResponseLength: Object.freeze({ MIN: 0, MAX: null, STEP: 100 }),
     customMemoryDepth: Object.freeze({ MIN: 0, MAX: 10000, STEP: 1 }),
+    lorebookMaxTagsPerScan: Object.freeze({ MIN: 1, MAX: 12, STEP: 1 }),
+    lorebookEntryDepth: Object.freeze({ MIN: 0, MAX: 999, STEP: 1 }),
+    lorebookEntryOrder: Object.freeze({ MIN: 0, MAX: 9999, STEP: 1 }),
 });
 
 export const MASK_USER_ROLE_MODES = Object.freeze({
@@ -312,6 +320,32 @@ export const defaultSettings = Object.freeze({
     auditorSummarizerResponseLength: 0,
     auditorConnectionProfileId: '',
     auditorRequestTimeoutSeconds: 120, // auditor primary route
+
+    // ─── Per-Character Memory Banks (dogoo9) ─────────────────────
+    // true = each card (or group) keeps its own memory inside a chat.
+    // Off freezes the live bank; it never hides memory.
+    memoryBanksEnabled: true,
+    memoryBanksNotifySwitch: true,
+
+    // ─── Lorebook Ingestion (Romuromylus) ────────────────────────
+    lorebookEnabled: false, // opt-in: every Layer 0 commit costs a scout call
+    lorebookTargetMode: 'chat', // 'chat' | 'character' | 'named'
+    lorebookTargetName: '', // used by 'named'; also the auto-created book name
+    lorebookAutoCreate: true, // create the target book when it does not exist
+    lorebookReviewMode: 'review', // 'review' = stage proposals | 'auto' = write immediately
+    lorebookMaxTagsPerScan: 4,
+    lorebookTypes: ['char', 'loc', 'faction', 'item', 'lore'],
+    lorebookAllowUpdates: true,
+    lorebookUseMergeRoute: false, // true = lore calls run on the Layer 1+ merge route
+    lorebookEntrySelective: true,
+    lorebookEntryConstant: false,
+    lorebookEntryVectorized: false,
+    lorebookEntryOrder: 100,
+    lorebookEntryDepth: 4,
+    lorebookEntryPosition: 0, // ST world_info_position: 0 = before char, 1 = after char, 4 = @depth
+    lorebookSystemPrompt: DEFAULT_LOREBOOK_SYSTEM_PROMPT,
+    lorebookScoutPrompt: DEFAULT_LOREBOOK_SCOUT_PROMPT,
+    lorebookEntryPrompts: { ...DEFAULT_LOREBOOK_ENTRY_PROMPTS },
 });
 
 // ─── Prompt Presets ──────────────────────────────────────────────────

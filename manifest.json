@@ -1,12 +1,12 @@
 {
-    "display_name": "Summaryception",
+    "display_name": "Summaryception (Best of All)",
     "loading_order": 50,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
-    "author": "Lodactio",
-    "version": "24.29.0",
+    "author": "Lodactio, vadash, Romuromylus, dogoo9 (merged)",
+    "version": "24.29.0-boa.1",
     "homePage": "https://github.com/Lodactio/Extension-Summaryception",
     "auto_update": true
 }

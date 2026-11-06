@@ -1,7 +1,8 @@
 import { getChat, getGroupId, getName1, isDryRunEvent } from '../foundation/context.js';
 import { isTraceEnabled, trace, warn } from '../foundation/logger.js';
 import { ensureChatScIds } from '../foundation/message-identity.js';
-import { getChatStore } from '../foundation/chat-store.js';
+import { getChatStore, saveChatStore } from '../foundation/chat-store.js';
+import { reconcileActiveBank } from '../core/memory-banks.js';
 import { getEffectiveSettings } from '../foundation/settings.js';
 import { refreshFull, refreshPreview, refreshUi } from '../foundation/refresh.js';
 import { syncGhosting } from '../core/ghosting.js';
@@ -322,11 +323,12 @@ function recoverPromptFreeze(reason, gate) {
  * Normalize message IDs, refresh injection, then restore missing ghost flags.
  * @param {import('../core/foreground-gate.js').ForegroundGate} gate
  */
-async function reconcileLoadedChatState(gate) {
+async function reconcileLoadedChatState(gate, queue) {
     const chat = getChat();
     if (ensureChatScIds(chat)) {
         await persistChatState();
     }
+    await reconcileMemoryBank({ queue });
     refreshPreview();
     await syncGhosting({ gate });
 }
@@ -375,10 +377,54 @@ async function runSerializedReconciliation(gate, queue) {
 async function drainReconciliationQueue(gate, queue) {
     do {
         reconcileQueued = false;
-        await reconcileLoadedChatState(gate);
+        await reconcileLoadedChatState(gate, queue);
         refreshUi();
     } while (reconcileQueued);
     await checkStaleCacheAdvice(queue);
+}
+
+let bankRetryTimer = null;
+
+/**
+ * Per-Character Memory Banks: put the right bank in the live slot. Runs
+ * before syncGhosting so the ownership the swap transferred is reconciled
+ * in the same pass. A busy summarizer defers the switch and retries.
+ * @param {object} deps
+ * @param {import('../core/summarizer-queue.js').SummarizerQueue} [deps.queue]
+ * @param {import('../core/foreground-gate.js').ForegroundGate} [deps.gate] - When set, syncGhosting runs here too.
+ * @returns {Promise<import('../core/memory-banks.js').BankReconcileResult>}
+ */
+export async function reconcileMemoryBank({ queue, gate } = {}) {
+    const settings = getEffectiveSettings();
+    if (!settings.enabled) {
+        return { status: 'unchanged', activeKey: '' };
+    }
+    const busy = Boolean(queue?.isBusy?.() || queue?.isRequestLive?.());
+    const result = reconcileActiveBank(settings, { busy });
+    if (result.status === 'deferred') {
+        if (bankRetryTimer) {
+            clearTimeout(bankRetryTimer);
+        }
+        bankRetryTimer = setTimeout(() => {
+            bankRetryTimer = null;
+            void reconcileMemoryBank({ queue, gate });
+        }, 3000);
+        return result;
+    }
+    if (result.status === 'unchanged') {
+        return result;
+    }
+    await saveChatStore();
+    if (gate) {
+        await syncGhosting({ gate });
+        refreshFull();
+    }
+    if (result.status === 'switched' && settings.memoryBanksNotifySwitch) {
+        globalThis.toastr?.info?.(`Memory bank: ${result.label}`, 'Summaryception', {
+            timeOut: 2500,
+        });
+    }
+    return result;
 }
 
 let staleCacheAdviceKey = '';

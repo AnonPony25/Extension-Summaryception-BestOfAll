@@ -267,6 +267,10 @@
                     <i class="fa-solid fa-pen-to-square"></i>
                     <span>Prompts</span>
                 </button>
+                <button class="sc-tab-button" type="button" role="tab" aria-selected="false" data-sc-tab="lore">
+                    <i class="fa-solid fa-book-atlas"></i>
+                    <span>Lore &amp; Banks</span>
+                </button>
                 <button class="sc-tab-button" type="button" role="tab" aria-selected="false" data-sc-tab="diagnostics">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
                     <span>Tools</span>
@@ -1148,6 +1152,205 @@
                         <textarea id="sc_auditor_user_prompt" class="text_pole sc-textarea sc-textarea-tall" rows="10" data-sc-setting="auditorUserPrompt"></textarea>
                     </div>
                     </div>
+                </section>
+            </div>
+            <div class="sc-tab-panel" role="tabpanel" data-sc-panel="lore">
+                <section class="sc-section" id="sc_banks_section">
+                    <div class="sc-section-header">
+                        <h4 class="sc-section-title">
+                            <span class="fa-solid fa-box-archive"></span>
+                            Memory Banks
+                        </h4>
+                    </div>
+                    <div class="sc-toggle-list">
+                        <label class="checkbox_label sc-toggle-row" for="sc_memory_banks_enabled">
+                            <span class="sc-toggle-icon fa-solid fa-id-card"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Per-Character Memory Banks</span>
+                                <small class="sc-hint">Each card (or group) keeps its own memory inside a chat. Moving a chat to another card switches to that card's bank and re-ghosts the chat to match. Turning this off freezes the current bank; nothing is hidden or lost.</small>
+                            </span>
+                            <input type="checkbox" id="sc_memory_banks_enabled" data-sc-setting="memoryBanksEnabled" />
+                        </label>
+                        <label class="checkbox_label sc-toggle-row" for="sc_memory_banks_notify">
+                            <span class="sc-toggle-icon fa-solid fa-bell"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Announce Bank Switches</span>
+                                <small class="sc-hint">Show a short notice when the live bank changes.</small>
+                            </span>
+                            <input type="checkbox" id="sc_memory_banks_notify" data-sc-setting="memoryBanksNotifySwitch" />
+                        </label>
+                    </div>
+                    <div class="sc-row">
+                        <span>Active bank: <strong id="sc_bank_active_label">-</strong></span>
+                        <small class="sc-hint" id="sc_bank_active_key"></small>
+                    </div>
+                    <div id="sc_bank_list" class="sc-bank-list"></div>
+                    <div class="sc-button-row">
+                        <button id="sc_bank_refresh" class="menu_button" type="button">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="sc-section" id="sc_lore_section">
+                    <div class="sc-section-header">
+                        <h4 class="sc-section-title">
+                            <span class="fa-solid fa-book-atlas"></span>
+                            Lorebook Ingestion
+                        </h4>
+                    </div>
+                    <div class="sc-toggle-list">
+                        <label class="checkbox_label sc-toggle-row" for="sc_lorebook_enabled">
+                            <span class="sc-toggle-icon fa-solid fa-wand-magic-sparkles"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Extract Facts Into A Lorebook</span>
+                                <small class="sc-hint">After each Layer 0 snippet, a Lore Scout call reads the passage and proposes new or updated World Info entries for characters, places, factions, items, and world rules. Costs one scout call per snippet plus one call per proposed entry.</small>
+                            </span>
+                            <input type="checkbox" id="sc_lorebook_enabled" data-sc-setting="lorebookEnabled" />
+                        </label>
+                        <label class="checkbox_label sc-toggle-row" for="sc_lorebook_updates">
+                            <span class="sc-toggle-icon fa-solid fa-pen"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Propose Updates To Existing Entries</span>
+                                <small class="sc-hint">Rewrites an entry when the story canonically changes it (death, new title, betrayal). Off = new entries only.</small>
+                            </span>
+                            <input type="checkbox" id="sc_lorebook_updates" data-sc-setting="lorebookAllowUpdates" />
+                        </label>
+                        <label class="checkbox_label sc-toggle-row" for="sc_lorebook_merge_route">
+                            <span class="sc-toggle-icon fa-solid fa-route"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Use The Merge Route</span>
+                                <small class="sc-hint">Run lore calls on the Layer 1+ merge connection instead of the Layer 0 one, when it points at a stronger model.</small>
+                            </span>
+                            <input type="checkbox" id="sc_lorebook_merge_route" data-sc-setting="lorebookUseMergeRoute" />
+                        </label>
+                        <label class="checkbox_label sc-toggle-row" for="sc_lorebook_autocreate">
+                            <span class="sc-toggle-icon fa-solid fa-file-circle-plus"></span>
+                            <span class="sc-toggle-copy">
+                                <span class="sc-toggle-title">Create The Lorebook If Missing</span>
+                                <small class="sc-hint">In Chat mode the new book is bound to this chat as its Chat Lore.</small>
+                            </span>
+                            <input type="checkbox" id="sc_lorebook_autocreate" data-sc-setting="lorebookAutoCreate" />
+                        </label>
+                    </div>
+                    <div class="sc-row">
+                        <label for="sc_lorebook_review_mode"><span>Write Mode</span><small class="sc-hint">Review stages every proposal for approval. Auto writes immediately; each write stays revertable from the history.</small></label>
+                        <select id="sc_lorebook_review_mode" class="text_pole" data-sc-setting="lorebookReviewMode">
+                            <option value="review">Review first</option>
+                            <option value="auto">Auto-write</option>
+                        </select>
+                    </div>
+                    <div class="sc-row">
+                        <label for="sc_lorebook_target_mode"><span>Target Lorebook</span><small class="sc-hint" id="sc_lorebook_target_hint"></small></label>
+                        <select id="sc_lorebook_target_mode" class="text_pole" data-sc-setting="lorebookTargetMode">
+                            <option value="chat">Chat lorebook</option>
+                            <option value="character">Character's primary lorebook</option>
+                            <option value="named">Named lorebook</option>
+                        </select>
+                    </div>
+                    <div class="sc-row">
+                        <label for="sc_lorebook_target_name"><span>Lorebook Name</span><small class="sc-hint">Named mode target. In Chat mode, the name for a newly created book (blank = automatic).</small></label>
+                        <input id="sc_lorebook_target_name" class="text_pole" type="text" data-sc-setting="lorebookTargetName" placeholder="Summaryception - Character" />
+                    </div>
+                    <div class="sc-row">
+                        <label for="sc_lorebook_max_tags"><span>Max Entities Per Snippet</span><small class="sc-hint">Upper bound on entries drafted per scan (1-12).</small></label>
+                        <input id="sc_lorebook_max_tags" class="text_pole" type="number" min="1" max="12" step="1" data-sc-setting="lorebookMaxTagsPerScan" data-sc-type="number" />
+                    </div>
+                    <div class="sc-row">
+                        <span>Entity Types</span>
+                        <div class="sc-lore-types" id="sc_lorebook_types">
+                            <label class="checkbox_label"><input type="checkbox" value="char" />Characters</label>
+                            <label class="checkbox_label"><input type="checkbox" value="loc" />Locations</label>
+                            <label class="checkbox_label"><input type="checkbox" value="faction" />Factions</label>
+                            <label class="checkbox_label"><input type="checkbox" value="item" />Items</label>
+                            <label class="checkbox_label"><input type="checkbox" value="lore" />World lore</label>
+                        </div>
+                    </div>
+                    <details class="sc-details">
+                        <summary>New Entry Defaults</summary>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_entry_position"><span>Insertion Position</span></label>
+                            <select id="sc_lorebook_entry_position" class="text_pole" data-sc-setting="lorebookEntryPosition" data-sc-type="number">
+                                <option value="0">Before Char Defs</option>
+                                <option value="1">After Char Defs</option>
+                                <option value="2">Before Author's Note</option>
+                                <option value="3">After Author's Note</option>
+                                <option value="4">@ Depth</option>
+                            </select>
+                        </div>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_entry_depth"><span>Depth</span></label>
+                            <input id="sc_lorebook_entry_depth" class="text_pole" type="number" min="0" max="999" step="1" data-sc-setting="lorebookEntryDepth" data-sc-type="number" />
+                        </div>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_entry_order"><span>Order</span></label>
+                            <input id="sc_lorebook_entry_order" class="text_pole" type="number" min="0" max="9999" step="1" data-sc-setting="lorebookEntryOrder" data-sc-type="number" />
+                        </div>
+                        <label class="checkbox_label" for="sc_lorebook_entry_constant"><input type="checkbox" id="sc_lorebook_entry_constant" data-sc-setting="lorebookEntryConstant" />Constant (always on)</label>
+                        <label class="checkbox_label" for="sc_lorebook_entry_vectorized"><input type="checkbox" id="sc_lorebook_entry_vectorized" data-sc-setting="lorebookEntryVectorized" />Vectorized</label>
+                    </details>
+                    <details class="sc-details">
+                        <summary>Lore Prompts</summary>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_system_prompt"><span>System Prompt</span></label>
+                            <textarea id="sc_lorebook_system_prompt" class="text_pole sc-textarea" rows="3" data-sc-setting="lorebookSystemPrompt"></textarea>
+                        </div>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_scout_prompt"><span>Scout Prompt</span><small class="sc-hint">Placeholders: {{player_name}}, {{story_txt}}, {{context_str}}, {{max_tags}}. Must keep the NEW:/UPDATE: tag grammar.</small></label>
+                            <textarea id="sc_lorebook_scout_prompt" class="text_pole sc-textarea" rows="8" data-sc-setting="lorebookScoutPrompt"></textarea>
+                        </div>
+                        <div class="sc-row">
+                            <label for="sc_lorebook_entry_prompt_type"><span>Entry Prompt</span><small class="sc-hint">Placeholders: {{player_name}}, {{entity_name}}, {{entity_type}}, {{gloss}}, {{source_passage}}, {{source_snippet}}, {{change_reason}}, {{existing_entry}}.</small></label>
+                            <select id="sc_lorebook_entry_prompt_type" class="text_pole">
+                                <option value="char">Character</option>
+                                <option value="loc">Location</option>
+                                <option value="faction">Faction</option>
+                                <option value="item">Item</option>
+                                <option value="lore">World lore</option>
+                                <option value="update">Update (any type)</option>
+                            </select>
+                            <textarea id="sc_lorebook_entry_prompt" class="text_pole sc-textarea" rows="8"></textarea>
+                        </div>
+                        <div class="sc-button-row">
+                            <button id="sc_lorebook_prompts_reset" class="menu_button" type="button">
+                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                <span>Reset Lore Prompts</span>
+                            </button>
+                        </div>
+                    </details>
+                </section>
+
+                <section class="sc-section" id="sc_lore_review_section">
+                    <div class="sc-section-header">
+                        <h4 class="sc-section-title">
+                            <span class="fa-solid fa-list-check"></span>
+                            Lore Review Queue <span class="sc-badge" id="sc_lore_pending_count">0</span>
+                        </h4>
+                    </div>
+                    <div class="sc-button-row">
+                        <button id="sc_lore_scan_now" class="menu_button" type="button" title="Scan the newest Layer 0 snippet now">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Scan Latest</span>
+                        </button>
+                        <button id="sc_lore_approve_all" class="menu_button" type="button">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Approve All</span>
+                        </button>
+                        <button id="sc_lore_reject_all" class="menu_button" type="button">
+                            <i class="fa-solid fa-xmark"></i>
+                            <span>Reject All</span>
+                        </button>
+                        <button id="sc_lore_clear_history" class="menu_button" type="button">
+                            <i class="fa-solid fa-broom"></i>
+                            <span>Clear History</span>
+                        </button>
+                    </div>
+                    <div id="sc_lore_queue" class="sc-lore-queue"></div>
+                    <details class="sc-details">
+                        <summary>History</summary>
+                        <div id="sc_lore_history" class="sc-lore-queue"></div>
+                    </details>
                 </section>
             </div>
             <div class="sc-tab-panel" role="tabpanel" data-sc-panel="diagnostics">
